@@ -1,0 +1,85 @@
+{% extends "blog/y_base.html" %}
+{% block title %}Create Blog{% endblock %}
+
+{% block content %}
+<div class="page-card create-blog-card">
+
+    <h3 class="mb-1 fw-bold">Create Blog</h3>
+    <p class="text-muted mb-4">
+      Write and publish a new article (Admin / Writer only)
+    </p>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- Title -->
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Blog Title</label>
+      <input
+        type="text"
+        name="title"
+        class="form-control"
+        placeholder="Enter blog title"
+        required
+      >
+    </div>
+
+    <!-- Excerpt -->
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Short Excerpt</label>
+      <textarea
+        name="excerpt"
+        class="form-control"
+        rows="2"
+        placeholder="Short summary (optional)"
+      ></textarea>
+    </div>
+
+    <!-- Content -->
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Content</label>
+      <textarea
+        name="content"
+        class="form-control"
+        rows="8"
+        placeholder="Write full blog content..."
+        required
+      ></textarea>
+    </div>
+
+    <!-- Category -->
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Category</label>
+      <select name="category_id" class="form-select">
+        <option value="">-- Select Category --</option>
+        {% for c in categories %}
+          <option value="{{ c.bc_category_id }}">
+            {{ c.bc_category_name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Status -->
+    <div class="mb-4">
+      <label class="form-label fw-semibold">Status</label>
+      <select name="status" class="form-select">
+        <option value="Draft">Draft</option>
+        <option value="Published">Published</option>
+      </select>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex gap-3">
+      <button type="submit" class="btn btn-primary px-4">
+        Save
+      </button>
+
+      <a href="{% url 'y_home' %}" class="btn btn-outline-secondary px-4">
+        Cancel
+      </a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

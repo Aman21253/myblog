@@ -1,0 +1,43 @@
+{% extends 'blog/y_base.html' %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<h3 class="mb-1">Login</h3>
+<p class="text-muted mb-4">Welcome back! Please login to continue.</p>
+
+<form method="post" class="row g-3">
+  {% csrf_token %}
+
+  <div class="col-12">
+    <label class="form-label">Email</label>
+    <input 
+      type="email"
+        name="email"
+        class="form-control"
+        autocomplete="new-email"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        placeholder="you@example.com" 
+        required
+    >
+  </div>
+
+  <div class="col-12">
+    <label class="form-label">Password</label>
+    <input
+      type="password"
+      name="password"
+      class="form-control"
+      autocomplete="new-password"
+      placeholder= "Password"
+      required
+    >
+  </div>
+
+  <div class="col-12 d-flex gap-2">
+    <button class="btn btn-dark" type="submit">Login</button>
+    <a class="btn btn-outline-secondary" href="{% url 'y_register' %}">Create account</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "blog/y_base.html" %}
+{% block title %}Edit Blog{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Edit Blog</h2>
+
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
+
+    <label>Title</label>
+    <input type="text" name="title" value="{{ blog.bd_blog_title }}" required autocomplete="off">
+
+    <label>Excerpt</label>
+    <input type="text" name="excerpt" value="{{ blog.bd_excerpt }}" autocomplete="off">
+
+    <label>Category</label>
+    <select name="category_id">
+      {% for c in categories %}
+        <option value="{{ c.bc_category_id }}" {% if blog.bd_category_id == c.bc_category_id %}selected{% endif %}>
+          {{ c.bc_category_name }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <label>Content</label>
+    <textarea name="content" rows="8" required>{{ blog.bd_blog_content }}</textarea>
+
+    <br><br>
+    <button class="btn" type="submit">Save</button>
+    <a class="btn secondary" href="{% url 'y_blog_detail' blog.bd_slug %}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'blog/y_base.html' %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<h3 class="mb-1">Register</h3>
+<p class="text-muted mb-4">Create your account (default role: viewer).</p>
+
+<form method="post" class="row g-3">
+  {% csrf_token %}
+
+  <div class="col-12">
+    <label class="form-label">Name</label>
+    <input class="form-control" name="name" placeholder="Your full name" required>
+  </div>
+
+  <div class="col-12">
+    <label class="form-label">Email</label>
+    <input class="form-control" name="email" placeholder="you@example.com" required>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Password</label>
+    <input class="form-control" name="password" type="password" required>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Confirm Password</label>
+    <input class="form-control" name="confirm_password" type="password" required>
+  </div>
+
+  <div class="col-12">
+    <label class="form-label">Role</label>
+
+    <select class="form-select" name="role" readonly disabled>
+      <option value="viewer" selected>Viewer</option>
+    </select>
+    <input type="hidden" name="role" value="viewer">
+  </div>
+
+  <div class="col-12 d-flex gap-2">
+    <button class="btn btn-dark" type="submit">Register</button>
+    <a class="btn btn-outline-secondary" href="{% url 'y_login' %}">Back to login</a>
+  </div>
+</form>
+{% endblock %}

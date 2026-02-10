@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}MyBlog{% endblock %}</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+  body{ background:#f6f7fb; font-family: Arial, sans-serif; }
+
+  .page-card{
+    background:#fff;
+    border:1px solid #e7e7e7;
+    border-radius:16px;
+    padding:22px;
+    max-width:1000px;
+    margin:22px auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+  }
+
+  .blog-title{ margin:0; font-size:28px; font-weight:800; color:#1f232a; }
+  .blog-meta{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; }
+
+  .pill{
+    font-size:12px;
+    padding:6px 10px;
+    border-radius:999px;
+    background:#f2f3f6;
+    border:1px solid #e6e8ee;
+    color:#333;
+  }
+
+  .divider{ height:1px; background:#eee; margin:18px 0; }
+  .blog-content{ color:#2c2f36; line-height:1.7; font-size:15px; }
+
+  .section-title{ font-weight:800; margin:18px 0 10px; color:#1f232a; }
+
+  .admin-actions{ margin-top:16px; display:flex; gap:10px; }
+  .btn-outline{
+    border:1px solid #1f232a; padding:8px 12px; border-radius:10px;
+    color:#1f232a; text-decoration:none; font-weight:700;
+  }
+  .btn-outline:hover{ background:#1f232a; color:#fff; }
+
+  .btn-danger{
+    border:none; padding:8px 12px; border-radius:10px;
+    background:#e53935; color:#fff; font-weight:700; cursor:pointer;
+  }
+  .btn-danger:hover{ opacity:0.92; }
+
+  .comments-wrapper{ margin-top:12px; display:flex; flex-direction:column; gap:12px; }
+
+  .comment-card{
+    background:#ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+  }
+
+  .comment-top{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom: 8px;
+  }
+
+  .comment-user{ font-weight: 800; color:#1f232a; font-size: 14px; }
+  .comment-date{ font-size: 12px; color:#777; }
+
+  .comment-text{
+    font-size: 14px; line-height: 1.6; color:#333; white-space: pre-wrap;
+  }
+
+  .empty-state{
+    background: #f7f8fa; border: 1px dashed #cfd3da;
+    padding: 14px 16px; border-radius: 12px; color: #555;
+  }
+
+  .comment-form-card{
+    margin-top: 18px;
+    background: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+  }
+
+  .comment-form{ display:flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .comment-form textarea{
+    width: 100%;
+    border: 1px solid #d7dbe2;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    outline: none;
+  }
+  .comment-form textarea:focus{ border-color:#1f232a; }
+
+  .btn-primary{
+    background:#1f232a; color:#fff; border:none;
+    padding: 10px 14px; border-radius: 10px; cursor:pointer; width: fit-content;
+    font-weight:800;
+  }
+  .btn-primary:hover{ opacity:0.92; }
+</style>
+</head>
+
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'y_home' %}">MyBlog</a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto gap-2">
+
+          <!-- if logged in -->
+          {% if request.session.user_id %}
+            {% if request.session.user_role == "admin" or request.session.user_role == "writer" %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'y_blog_create' %}">
+                  + Create
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'y_dashboard' %}">Dashboard</a>
+              </li>
+            {% endif %}
+
+            {% if request.session.user_role == "admin" %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'y_categories' %}">Categories</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'y_users' %}">Users</a>
+            </li>
+            {% endif %}
+
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'y_logout' %}">Logout</a>
+            </li>
+
+          <!-- if not logged in -->
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'y_login' %}">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'y_register' %}">Register</a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- PAGE WRAPPER -->
+  <main class="container py-4">
+    <!-- Messages -->
+    {% if messages %}
+      <div class="mb-3">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} mb-2" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="card card-soft p-4">
+      {% block content %}{% endblock %}
+    </div>
+
+    <p class="text-center muted mt-4 small">
+      © {{ now|date:"Y" }} MyBlog • Role: {{ request.session.user_role|default:"guest" }}
+    </p>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

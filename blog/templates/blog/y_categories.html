@@ -1,0 +1,154 @@
+{% extends "blog/y_base.html" %}
+{% block title %}Categories | MyBlog{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h2 class="mb-0">Categories</h2>
+    <div class="text-muted small">Admin can add / edit / delete categories</div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <a href="{% url 'y_categories' %}?mode=create" class="btn btn-dark">+ Add Category</a>
+    {% if mode %}
+      <a href="{% url 'y_categories' %}" class="btn btn-outline-secondary">Close Form</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if mode == "create" or mode == "edit" %}
+  <div class="card p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="mb-0 fw-bold">{% if mode == "edit" %}Edit Category{% else %}Create Category{% endif %}</h5>
+        <div class="text-muted small">
+          {% if mode == "edit" %}Editing: <b>{{ c.bc_category_name }}</b> (slug: {{ c.bc_slug }}){% endif %}
+        </div>
+      </div>
+      <a href="{% url 'y_categories' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+    </div>
+
+    <hr class="my-3">
+
+    <form method="post"
+      action="{% if mode == 'edit' %}{% url 'y_category_edit' c.bc_category_id %}{% else %}{% url 'y_category_create' %}{% endif %}">
+      {% csrf_token %}
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Category Name</label>
+          <input class="form-control" name="name" required value="{{ c.bc_category_name|default:'' }}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Parent Category (optional)</label>
+          <select class="form-select" name="parent_id">
+            <option value="">-- None --</option>
+            {% for p in parent_choices %}
+              <option value="{{ p.bc_category_id }}"
+                {% if c and c.bc_parent_id == p.bc_category_id %}selected{% endif %}>
+                {{ p.bc_category_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Sort Order</label>
+          <input class="form-control" name="sort_order" value="{{ c.bc_sort_order|default:'0' }}">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Status</label>
+          <select class="form-select" name="status">
+            {% for s in statuses %}
+              <option value="{{ s }}" {% if c and c.bc_category_status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea class="form-control" name="description" rows="2">{{ c.bc_description|default:'' }}</textarea>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-dark px-4" type="submit">
+            {% if mode == "edit" %}Update{% else %}Create{% endif %}
+          </button>
+          <a class="btn btn-outline-secondary px-4" href="{% url 'y_categories' %}">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endif %}
+
+<form method="get" class="card p-3 mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col-md-9">
+      <input class="form-control" name="q" value="{{ q }}" placeholder="Search category..." />
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button class="btn btn-dark w-100" type="submit">Search</button>
+      <a class="btn btn-outline-secondary" href="{% url 'y_categories' %}">Reset</a>
+    </div>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Slug</th>
+        <th>Parent</th>
+        <th>Status</th>
+        <th>Sort</th>
+        <th style="width:220px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for x in categories %}
+        <tr>
+          <td>{{ x.bc_category_id }}</td>
+          <td>{{ x.bc_category_name }}</td>
+          <td>{{ x.bc_slug }}</td>
+          <td>{{ x.bc_parent_id|default:"—" }}</td>
+          <td>
+            {% if x.bc_category_status == "Active" %}
+              <span class="badge text-bg-success">Active</span>
+            {% else %}
+              <span class="badge text-bg-warning">Inactive</span>
+            {% endif %}
+          </td>
+          <td>{{ x.bc_sort_order }}</td>
+          <td>
+            <div class="d-flex gap-2">
+              <a class="btn btn-sm btn-outline-dark"
+                 href="{% url 'y_categories' %}?mode=edit&category_id={{ x.bc_category_id }}">
+                Edit
+              </a>
+
+              <form method="post" action="{% url 'y_category_delete' x.bc_category_id %}">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Delete this category? If used in blogs, it will be set Inactive.')">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="alert alert-warning mb-0">No categories found.</div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
