@@ -377,8 +377,15 @@ def y_blog_edit(request, blog_id):
 @login_required_y
 @role_required("admin", "writer")
 def y_blog_delete(request, blog_id):
+    role = request.session.get("user_role")
+    user_id = request.session.get("user_id")
+
     blog = get_object_or_404(BlogsDetails, bd_blog_id=blog_id, bd_is_deleted=0)
 
+    if role == "writer" and blog.bd_user_id != user_id:
+        messages.error(request, "You can delete only your own blogs.")
+        return redirect("y_blog_detail", slug=blog.bd_slug)
+    
     if request.method == "POST":
         blog.bd_is_deleted = 1
         blog.bd_updated_at = timezone.now()
