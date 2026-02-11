@@ -102,7 +102,6 @@ class BlogsComments(models.Model):
     bc_status = models.CharField(max_length=8)
     bc_parent = models.ForeignKey('self', models.DO_NOTHING, blank=True, null=True)
     bc_is_deleted = models.IntegerField()
-    bc_ip = models.CharField(max_length=45, blank=True, null=True)
 
     class Meta:
         managed = False
