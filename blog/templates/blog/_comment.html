@@ -1,0 +1,53 @@
+<div class="comment-card" style="margin-left: {{ level|default:0 }}px;">
+
+  <div class="comment-top">
+    <div class="comment-user">
+      👤
+      {% if c.bc_user %}
+        {{ c.bc_user.bu_first_name }} {{ c.bc_user.bu_last_name }}
+      {% else %}
+        User
+      {% endif %}
+    </div>
+
+    <div class="comment-date">
+      {{ c.bc_created_at|date:"d M Y, h:i A" }}
+    </div>
+  </div>
+
+  <div class="comment-text">{{ c.bc_comment }}</div>
+
+  {% if role == "viewer" %}
+    <div class="mt-2 d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-sm btn-outline-dark"
+              onclick="toggleReplyForm('{{ c.bc_comment_id }}')">
+        Reply
+      </button>
+      <span class="text-muted small">Reply under this comment</span>
+    </div>
+
+    <form id="replyForm-{{ c.bc_comment_id }}" method="post" class="mt-2" style="display:none;" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="parent_id" value="{{ c.bc_comment_id }}">
+
+      <textarea name="comment" rows="2" class="form-control" required
+                placeholder="Write reply..." autocomplete="off"></textarea>
+
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-dark btn-sm" type="submit">Post Reply</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button"
+                onclick="toggleReplyForm('{{ c.bc_comment_id }}')">
+          Cancel
+        </button>
+      </div>
+    </form>
+  {% endif %}
+
+  {% if c.children %}
+    <div class="mt-3 d-flex flex-column gap-2">
+      {% for child in c.children %}
+        {% include "blog/_comment.html" with c=child level=level|add:28 role=role %}
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

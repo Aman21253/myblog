@@ -252,24 +252,33 @@ def y_home(request):
         "role": role,
     })
 
-
+#----------Blog detail--------------
 @login_required_y
 def y_blog_detail(request, slug):
     role = request.session.get("user_role", "viewer")
     user_id = request.session.get("user_id")
 
-    blog = get_object_or_404(
-        BlogsDetails,
-        bd_slug=slug,
-        bd_is_deleted=0
-    )
+    blog = get_object_or_404(BlogsDetails, bd_slug=slug, bd_is_deleted=0)
 
-    comments = (
+    all_comments = (
         BlogsComments.objects
         .filter(bc_blog=blog, bc_is_deleted=0, bc_status="Approved")
-        .select_related("bc_user")
+        .select_related("bc_user", "bc_parent")
         .order_by("-bc_created_at")
     )
+
+    children_map = {}
+    roots = []
+
+    for c in all_comments:
+        parent_id = c.bc_parent_id
+        if parent_id:
+            children_map.setdefault(parent_id, []).append(c)
+        else:
+            roots.append(c)
+
+    for c in all_comments:
+        c.children = children_map.get(c.bc_comment_id, [])
 
     if request.method == "POST":
         if role != "viewer":
@@ -277,9 +286,22 @@ def y_blog_detail(request, slug):
             return redirect("y_blog_detail", slug=slug)
 
         comment_text = (request.POST.get("comment") or "").strip()
+        parent_id = request.POST.get("parent_id")
+
         if not comment_text:
             messages.error(request, "Comment cannot be empty.")
             return redirect("y_blog_detail", slug=slug)
+
+        parent_obj = None
+        if parent_id:
+            try:
+                parent_obj = BlogsComments.objects.get(
+                    bc_comment_id=int(parent_id),
+                    bc_blog=blog,
+                    bc_is_deleted=0
+                )
+            except:
+                parent_obj = None
 
         BlogsComments.objects.create(
             bc_blog=blog,
@@ -288,13 +310,15 @@ def y_blog_detail(request, slug):
             bc_status="Approved",
             bc_created_at=timezone.now(),
             bc_is_deleted=0,
+            bc_parent=parent_obj
         )
-        messages.success(request, "Comment added.")
+
+        messages.success(request, "Reply added." if parent_obj else "Comment added.")
         return redirect("y_blog_detail", slug=slug)
 
     return render(request, "blog/y_detail.html", {
         "blog": blog,
-        "comments": comments,
+        "comments_roots": roots,
         "role": role,
     })
 
