@@ -4,6 +4,9 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 from django.db.models import Q
 from django.db import IntegrityError
+import os
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 
 from .models import BlogsUsers, BlogsCategories, BlogsDetails, BlogsComments
 
@@ -344,7 +347,7 @@ def y_blog_create(request):
 def y_blog_edit(request, blog_id):
     role = request.session.get("user_role")
     user_id = request.session.get("user_id")
-    
+
     blog = get_object_or_404(BlogsDetails, bd_blog_id=blog_id, bd_is_deleted=0)
 
     if role == "writer" and blog.bd_user_id != user_id:
@@ -708,3 +711,45 @@ def y_category_delete(request, category_id):
         return redirect("y_categories")
 
     return redirect("y_categories")
+
+#----------------Profile pic---------------------
+@login_required_y
+def y_profile(request):
+    user_id = request.session.get("user_id")
+    u = get_object_or_404(BlogsUsers, bu_user_id=user_id)
+    return render(request, "blog/y_profile.html", {"u": u})
+
+#-----------------Edit---------------------------
+@login_required_y
+def y_profile_edit(request):
+    user_id = request.session.get("user_id")
+    u = get_object_or_404(BlogsUsers, bu_user_id=user_id)
+
+    if request.method == "POST":
+        first_name = (request.POST.get("first_name") or "").strip()
+        last_name = (request.POST.get("last_name") or "").strip()
+        username = (request.POST.get("username") or "").strip()
+        bio = (request.POST.get("bio") or "").strip()
+
+        if username:
+            if BlogsUsers.objects.filter(bu_username=username).exclude(bu_user_id=user_id).exists():
+                messages.error(request, "Username already taken.")
+                return redirect("y_profile_edit")
+
+        pic = request.FILES.get("profile_pic")
+        if pic:
+            fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "profile_pics"))
+            filename = fs.save(pic.name, pic)
+            u.bu_profile_pic = f"profile_pics/{filename}"
+
+        u.bu_first_name = first_name
+        u.bu_last_name = last_name
+        u.bu_username = username or u.bu_username
+        u.bu_bio = bio or None
+        u.bu_updated_at = timezone.now()
+        u.save()
+
+        messages.success(request, "Profile updated successfully.")
+        return redirect("y_profile")
+
+    return render(request, "blog/y_profile_edit.html", {"u": u})

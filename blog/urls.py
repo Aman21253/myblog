@@ -26,4 +26,7 @@ urlpatterns = [
     path("y/categories/new/", views.y_category_create, name="y_category_create"),
     path("y/categories/<int:category_id>/edit/", views.y_category_edit, name="y_category_edit"),
     path("y/categories/<int:category_id>/delete/", views.y_category_delete, name="y_category_delete"),
+
+    path("y/profile/", views.y_profile, name="y_profile"),
+    path("y/profile/edit/", views.y_profile_edit, name="y_profile_edit"),
 ]

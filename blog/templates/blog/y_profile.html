@@ -1,0 +1,31 @@
+{% extends "blog/y_base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="card p-4 shadow-sm">
+  <div class="d-flex align-items-center gap-3">
+    {% if u.bu_profile_pic %}
+      <img src="/media/{{ u.bu_profile_pic }}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;">
+    {% else %}
+      <div style="width:90px;height:90px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-weight:800;">
+        {{ u.bu_first_name|default:"U"|slice:":1" }}
+      </div>
+    {% endif %}
+
+    <div>
+      <h4 class="mb-0">{{ u.bu_first_name }} {{ u.bu_last_name }}</h4>
+      <div class="text-muted small">@{{ u.bu_username|default:"(no-username)" }}</div>
+      <span class="badge bg-dark mt-2">{{ u.bu_role }}</span>
+    </div>
+
+    <div class="ms-auto">
+      <a class="btn btn-outline-dark" href="{% url 'y_profile_edit' %}">Edit Profile</a>
+    </div>
+  </div>
+
+  <hr>
+
+  <h6 class="fw-bold">Bio</h6>
+  <p class="text-muted mb-0">{{ u.bu_bio|default:"No bio added yet." }}</p>
+</div>
+{% endblock %}

@@ -65,7 +65,7 @@
             <div class="comment-user">
               👤
               {% if c.bc_user %}
-                {{ c.bc_user.bu_first_name|default:"" }} {{ c.bc_user.bu_last_name|default:"" }}
+                @{{ c.bc_user.bu_username|default:c.bc_user.bu_first_name }}
                 {% if not c.bc_user.bu_first_name and not c.bc_user.bu_last_name %}
                   User
                 {% endif %}
