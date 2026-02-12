@@ -95,5 +95,17 @@ function toggleReplyForm(id){
   form.style.display = (form.style.display === "none" || form.style.display === "") ? "block" : "none";
 }
 </script>
+<script>
+  function toggleReplyForm(id) {
+    const el = document.getElementById("replyForm-" + id);
+    if (!el) return;
+    el.style.display = (el.style.display === "none" || el.style.display === "") ? "block" : "none";
+  }
 
+  function toggleEditForm(id) {
+    const el = document.getElementById("editForm-" + id);
+    if (!el) return;
+    el.style.display = (el.style.display === "none" || el.style.display === "") ? "block" : "none";
+  }
+</script>
 {% endblock %}

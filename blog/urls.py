@@ -29,4 +29,8 @@ urlpatterns = [
 
     path("y/profile/", views.y_profile, name="y_profile"),
     path("y/profile/edit/", views.y_profile_edit, name="y_profile_edit"),
+
+
+    path("y/comment/<int:comment_id>/edit/", views.y_comment_edit, name="y_comment_edit"),
+    path("y/comment/<int:comment_id>/delete/", views.y_comment_delete, name="y_comment_delete"),
 ]

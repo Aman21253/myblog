@@ -193,3 +193,26 @@ class DjangoSession(models.Model):
     class Meta:
         managed = False
         db_table = 'django_session'
+
+class BlogsLikes(models.Model):
+    bl_like_id = models.AutoField(primary_key=True)
+    bl_blog = models.ForeignKey(
+        "BlogsDetails",
+        on_delete=models.CASCADE,
+        db_column="bl_blog_id",
+        related_name="likes"
+    )
+    bl_user = models.ForeignKey(
+        "BlogsUsers",
+        on_delete=models.CASCADE,
+        db_column="bl_user_id",
+        related_name="likes"
+    )
+    bl_created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "blogs_likes"
+        unique_together = ("bl_blog", "bl_user")
+
+    def __str__(self):
+        return f"{self.bl_user_id} -> {self.bl_blog_id}"

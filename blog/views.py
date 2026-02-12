@@ -777,3 +777,68 @@ def y_profile_edit(request):
         return redirect("y_profile")
 
     return render(request, "blog/y_profile_edit.html", {"u": u})
+
+
+#----------comment-----------------
+@login_required_y
+def y_comment_edit(request, comment_id):
+    role = request.session.get("user_role", "viewer")
+    user_id = request.session.get("user_id")
+
+    c = get_object_or_404(BlogsComments, bc_comment_id=comment_id, bc_is_deleted=0)
+
+    # Only viewer can edit (same rule as "only viewer can comment")
+    if role != "viewer":
+        messages.error(request, "Only viewer can edit comments.")
+        return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)
+
+    # Only own comment
+    if c.bc_user_id != user_id:
+        messages.error(request, "You can edit only your own comment.")
+        return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)
+
+    if request.method != "POST":
+        return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)
+
+    new_text = (request.POST.get("comment") or "").strip()
+    if not new_text:
+        messages.error(request, "Comment cannot be empty.")
+        return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)
+
+    c.bc_comment = new_text
+
+    # Optional safe update if field exists
+    if hasattr(c, "bc_updated_at"):
+        c.bc_updated_at = timezone.now()
+
+    c.save()
+    messages.success(request, "Comment updated.")
+    return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)
+
+
+@login_required_y
+def y_comment_delete(request, comment_id):
+    role = request.session.get("user_role", "viewer")
+    user_id = request.session.get("user_id")
+
+    c = get_object_or_404(BlogsComments, bc_comment_id=comment_id, bc_is_deleted=0)
+
+    if role != "viewer":
+        messages.error(request, "Only viewer can delete comments.")
+        return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)
+
+    if c.bc_user_id != user_id:
+        messages.error(request, "You can delete only your own comment.")
+        return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)
+
+    if request.method != "POST":
+        return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)
+
+    # Soft delete
+    c.bc_is_deleted = 1
+    if hasattr(c, "bc_updated_at"):
+        c.bc_updated_at = timezone.now()
+
+    c.save(update_fields=["bc_is_deleted"] + (["bc_updated_at"] if hasattr(c, "bc_updated_at") else []))
+    messages.success(request, "Comment deleted.")
+    return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)

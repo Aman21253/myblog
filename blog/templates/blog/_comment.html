@@ -15,17 +15,37 @@
     </div>
   </div>
 
-  <div class="comment-text">{{ c.bc_comment }}</div>
+  <div class="comment-text" id="commentText-{{ c.bc_comment_id }}">
+    {{ c.bc_comment }}
+  </div>
 
   {% if role == "viewer" %}
-    <div class="mt-2 d-flex align-items-center gap-2">
+    <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
+
+      <!--  Reply -->
       <button type="button" class="btn btn-sm btn-outline-dark"
               onclick="toggleReplyForm('{{ c.bc_comment_id }}')">
         Reply
       </button>
-      <span class="text-muted small">Reply under this comment</span>
+
+      <!-- Edit/Delete only if owner -->
+      {% if request.session.user_id == c.bc_user_id %}
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                onclick="toggleEditForm('{{ c.bc_comment_id }}')">
+          Edit
+        </button>
+
+        <form method="post" action="{% url 'y_comment_delete' c.bc_comment_id %}" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Delete this comment?')">
+            Delete
+          </button>
+        </form>
+      {% endif %}
     </div>
 
+    <!-- Reply form -->
     <form id="replyForm-{{ c.bc_comment_id }}" method="post" class="mt-2" style="display:none;" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="parent_id" value="{{ c.bc_comment_id }}">
@@ -41,6 +61,26 @@
         </button>
       </div>
     </form>
+
+    <!-- Edit form -->
+    {% if request.session.user_id == c.bc_user_id %}
+      <form id="editForm-{{ c.bc_comment_id }}" method="post"
+            action="{% url 'y_comment_edit' c.bc_comment_id %}"
+            class="mt-2" style="display:none;" autocomplete="off">
+        {% csrf_token %}
+
+        <textarea name="comment" rows="2" class="form-control" required
+                  autocomplete="off">{{ c.bc_comment }}</textarea>
+
+        <div class="d-flex gap-2 mt-2">
+          <button class="btn btn-dark btn-sm" type="submit">Save</button>
+          <button class="btn btn-outline-secondary btn-sm" type="button"
+                  onclick="toggleEditForm('{{ c.bc_comment_id }}')">
+            Cancel
+          </button>
+        </div>
+      </form>
+    {% endif %}
   {% endif %}
 
   {% if c.children %}
