@@ -212,6 +212,7 @@ class BlogsLikes(models.Model):
 
     class Meta:
         db_table = "blogs_likes"
+        managed = True 
         unique_together = ("bl_blog", "bl_user")
 
     def __str__(self):

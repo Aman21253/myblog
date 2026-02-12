@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db import IntegrityError
 import os
 from django.conf import settings
@@ -260,6 +260,22 @@ def y_blog_detail(request, slug):
 
     blog = get_object_or_404(BlogsDetails, bd_slug=slug, bd_is_deleted=0)
 
+    if blog.bd_blog_status == "Published":
+        today = timezone.now().date().isoformat()
+
+        viewed_map = request.session.get("viewed_blogs", {})
+        last_viewed = viewed_map.get(str(blog.bd_blog_id))
+
+        if last_viewed != today:
+            BlogsDetails.objects.filter(bd_blog_id=blog.bd_blog_id).update(
+                bd_views=F("bd_views") + 1
+            )
+            viewed_map[str(blog.bd_blog_id)] = today
+            request.session["viewed_blogs"] = viewed_map
+            request.session.modified = True
+
+            blog.refresh_from_db(fields=["bd_views"])
+
     all_comments = (
         BlogsComments.objects
         .filter(bc_blog=blog, bc_is_deleted=0, bc_status="Approved")
@@ -316,11 +332,55 @@ def y_blog_detail(request, slug):
         messages.success(request, "Reply added." if parent_obj else "Comment added.")
         return redirect("y_blog_detail", slug=slug)
 
+    like_count = BlogsLikes.objects.filter(bl_blog=blog).count()
+    user_liked = False
+    if role == "viewer" and user_id:
+        user_liked = BlogsLikes.objects.filter(
+            bl_blog=blog,
+            bl_user_id=user_id
+        ).exists()
+
     return render(request, "blog/y_detail.html", {
         "blog": blog,
         "comments_roots": roots,
         "role": role,
+
+        "like_count": like_count,
+        "user_liked": user_liked,
     })
+
+
+@login_required_y
+def y_blog_like_toggle(request, blog_id):
+    role = request.session.get("user_role", "viewer")
+    user_id = request.session.get("user_id")
+
+    if request.method != "POST":
+        return redirect("y_home")
+
+    if role != "viewer":
+        messages.error(request, "Only viewer can like blogs.")
+        return redirect("y_home")
+
+    blog = get_object_or_404(BlogsDetails, bd_blog_id=blog_id, bd_is_deleted=0)
+
+    if blog.bd_blog_status != "Published":
+        messages.error(request, "You can like only published blogs.")
+        return redirect("y_blog_detail", slug=blog.bd_slug)
+
+    existing = BlogsLikes.objects.filter(bl_blog=blog, bl_user_id=user_id)
+
+    if existing.exists():
+        existing.delete()
+        messages.success(request, "Like removed.")
+    else:
+        try:
+            BlogsLikes.objects.create(bl_blog=blog, bl_user_id=user_id)
+            messages.success(request, "Liked!")
+        except IntegrityError:
+            pass
+
+    return redirect("y_blog_detail", slug=blog.bd_slug)
 
 #-------------------Create--------------------------
 @login_required_y

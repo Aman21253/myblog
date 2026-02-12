@@ -13,6 +13,7 @@
       <div class="blog-meta">
         <span class="pill">Slug: {{ blog.bd_slug }}</span>
         <span class="pill">Status: {{ blog.bd_blog_status }}</span>
+        <span class="pill">Views: {{ blog.bd_views }}</span>
 
         {% if blog.bd_published_at %}
           <span class="pill">Published: {{ blog.bd_published_at|date:"d M Y, h:i A" }}</span>
