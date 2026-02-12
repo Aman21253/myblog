@@ -1,13 +1,17 @@
-<div class="comment-card" style="margin-left: {{ level|default:0 }}px;">
+{# templates/blog/_comment.html #}
 
-  <div class="comment-top">
+<div class="comment-card" style="--level: {{ level|default:0 }}px;">
+
+  <div class="comment-head">
     <div class="comment-user">
-      👤
-      {% if c.bc_user %}
-        {{ c.bc_user.bu_first_name }} {{ c.bc_user.bu_last_name }}
-      {% else %}
-        User
-      {% endif %}
+      <span class="avatar">👤</span>
+      <span class="name">
+        {% if c.bc_user %}
+          {{ c.bc_user.bu_first_name }} {{ c.bc_user.bu_last_name }}
+        {% else %}
+          User
+        {% endif %}
+      </span>
     </div>
 
     <div class="comment-date">
@@ -15,79 +19,71 @@
     </div>
   </div>
 
-  <div class="comment-text" id="commentText-{{ c.bc_comment_id }}">
+  <div class="comment-body">
     {{ c.bc_comment }}
   </div>
 
-  {% if role == "viewer" %}
-    <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
-
-      <!--  Reply -->
-      <button type="button" class="btn btn-sm btn-outline-dark"
+  {# Actions row #}
+  <div class="comment-actions">
+    {% if role == "viewer" %}
+      <button type="button" class="btn btn-sm btn-light action-pill"
               onclick="toggleReplyForm('{{ c.bc_comment_id }}')">
-        Reply
+        ↩ Reply
       </button>
 
-      <!-- Edit/Delete only if owner -->
+      {# Edit / Delete only if this is your comment (pass can_edit in view OR use user_id check if you have session id) #}
       {% if request.session.user_id == c.bc_user_id %}
-        <button type="button" class="btn btn-sm btn-outline-secondary"
+        <button type="button" class="btn btn-sm btn-light action-pill"
                 onclick="toggleEditForm('{{ c.bc_comment_id }}')">
-          Edit
+          ✏ Edit
         </button>
 
         <form method="post" action="{% url 'y_comment_delete' c.bc_comment_id %}" class="d-inline">
           {% csrf_token %}
-          <button class="btn btn-sm btn-outline-danger"
+          <button class="btn btn-sm btn-outline-danger action-pill"
                   onclick="return confirm('Delete this comment?')">
-            Delete
+            🗑 Delete
           </button>
         </form>
       {% endif %}
-    </div>
+    {% endif %}
+  </div>
 
-    <!-- Reply form -->
-    <form id="replyForm-{{ c.bc_comment_id }}" method="post" class="mt-2" style="display:none;" autocomplete="off">
+  {# Reply form #}
+  {% if role == "viewer" %}
+    <form id="replyForm-{{ c.bc_comment_id }}" method="post" class="mini-form" style="display:none;" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="parent_id" value="{{ c.bc_comment_id }}">
-
-      <textarea name="comment" rows="2" class="form-control" required
-                placeholder="Write reply..." autocomplete="off"></textarea>
-
-      <div class="d-flex gap-2 mt-2">
-        <button class="btn btn-dark btn-sm" type="submit">Post Reply</button>
+      <textarea name="comment" rows="2" class="form-control" required placeholder="Write a reply..."></textarea>
+      <div class="mini-form-actions">
+        <button class="btn btn-dark btn-sm" type="submit">Post</button>
         <button class="btn btn-outline-secondary btn-sm" type="button"
-                onclick="toggleReplyForm('{{ c.bc_comment_id }}')">
-          Cancel
-        </button>
+                onclick="toggleReplyForm('{{ c.bc_comment_id }}')">Cancel</button>
       </div>
     </form>
 
-    <!-- Edit form -->
+    {# Edit form #}
     {% if request.session.user_id == c.bc_user_id %}
-      <form id="editForm-{{ c.bc_comment_id }}" method="post"
-            action="{% url 'y_comment_edit' c.bc_comment_id %}"
-            class="mt-2" style="display:none;" autocomplete="off">
+      <form id="editForm-{{ c.bc_comment_id }}" method="post" action="{% url 'y_comment_edit' c.bc_comment_id %}"
+            class="mini-form" style="display:none;" autocomplete="off">
         {% csrf_token %}
-
-        <textarea name="comment" rows="2" class="form-control" required
-                  autocomplete="off">{{ c.bc_comment }}</textarea>
-
-        <div class="d-flex gap-2 mt-2">
+        <textarea name="comment" rows="2" class="form-control" required>{{ c.bc_comment }}</textarea>
+        <div class="mini-form-actions">
           <button class="btn btn-dark btn-sm" type="submit">Save</button>
           <button class="btn btn-outline-secondary btn-sm" type="button"
-                  onclick="toggleEditForm('{{ c.bc_comment_id }}')">
-            Cancel
-          </button>
+                  onclick="toggleEditForm('{{ c.bc_comment_id }}')">Cancel</button>
         </div>
       </form>
     {% endif %}
   {% endif %}
 
+  {# Children #}
   {% if c.children %}
-    <div class="mt-3 d-flex flex-column gap-2">
+    <div class="comment-children">
       {% for child in c.children %}
-        {% include "blog/_comment.html" with c=child level=level|add:28 role=role %}
+        {% include "blog/_comment.html" with c=child level=level|add:24 role=role %}
       {% endfor %}
     </div>
   {% endif %}
+
 </div>

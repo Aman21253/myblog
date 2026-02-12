@@ -8,7 +8,7 @@ import os
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
-from .models import BlogsUsers, BlogsCategories, BlogsDetails, BlogsComments
+from .models import BlogsUsers, BlogsCategories, BlogsDetails, BlogsComments, BlogsLikes
 
 
 # ----------- USER MANAGEMENT HELPERS -----------
@@ -842,3 +842,36 @@ def y_comment_delete(request, comment_id):
     c.save(update_fields=["bc_is_deleted"] + (["bc_updated_at"] if hasattr(c, "bc_updated_at") else []))
     messages.success(request, "Comment deleted.")
     return redirect("y_blog_detail", slug=c.bc_blog.bd_slug)
+
+@login_required_y
+def y_blog_like_toggle(request, blog_id):
+    role = request.session.get("user_role", "viewer")
+    user_id = request.session.get("user_id")
+
+    if request.method != "POST":
+        return redirect("y_home")
+    if role != "viewer":
+        messages.error(request, "Only viewer can like blogs.")
+        return redirect("y_home")
+
+    blog = get_object_or_404(BlogsDetails, bd_blog_id=blog_id, bd_is_deleted=0)
+
+    # Optional: only allow likes on published blogs
+    if blog.bd_blog_status != "Published":
+        messages.error(request, "You can like only published blogs.")
+        return redirect("y_blog_detail", slug=blog.bd_slug)
+
+    existing = BlogsLikes.objects.filter(bl_blog=blog, bl_user_id=user_id)
+
+    if existing.exists():
+        existing.delete()
+        messages.success(request, "Like removed.")
+    else:
+        try:
+            BlogsLikes.objects.create(bl_blog=blog, bl_user_id=user_id)
+            messages.success(request, "Liked!")
+        except IntegrityError:
+            # safety (in case double submit)
+            pass
+
+    return redirect("y_blog_detail", slug=blog.bd_slug)
