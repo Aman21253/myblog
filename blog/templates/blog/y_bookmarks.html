@@ -1,0 +1,61 @@
+{% extends "blog/y_base.html" %}
+{% block title %}Bookmarks | MyBlog{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h2 class="mb-0">Bookmarks</h2>
+    <div class="text-muted small">Your saved blogs</div>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'y_home' %}">← Back</a>
+</div>
+
+<form method="get" class="card p-3 mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col-md-9">
+      <input class="form-control" name="q" value="{{ q }}" placeholder="Search bookmarks..." />
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button class="btn btn-dark w-100" type="submit">Search</button>
+      <a class="btn btn-outline-secondary" href="{% url 'y_bookmarks' %}">Reset</a>
+    </div>
+  </div>
+</form>
+
+<div class="row g-3">
+  {% for bm in bookmarks %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge text-bg-secondary">{{ bm.bb_blog.bd_blog_status }}</span>
+            <span class="text-muted small">{{ bm.bb_created_at|date:"d M Y" }}</span>
+          </div>
+
+          <h5 class="card-title mb-2">{{ bm.bb_blog.bd_blog_title }}</h5>
+
+          <p class="card-text text-muted mb-3" style="min-height:52px;">
+            {{ bm.bb_blog.bd_excerpt|default:"No excerpt available."|truncatechars:90 }}
+          </p>
+
+          <div class="mt-auto d-flex justify-content-between align-items-center">
+            <a href="{% url 'y_blog_detail' bm.bb_blog.bd_slug %}">Read</a>
+
+            <form method="post" action="{% url 'y_blog_bookmark_toggle' bm.bb_blog.bd_blog_id %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline-warning" type="submit">
+                Remove
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="alert alert-warning mb-0">No bookmarks found.</div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -11,7 +11,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from datetime import timedelta
 
-from .models import BlogsUsers, BlogsCategories, BlogsDetails, BlogsComments, BlogsLikes
+from .models import BlogsUsers, BlogsCategories, BlogsDetails, BlogsComments, BlogsLikes, BlogsBookmarks
 
 
 # ----------- USER MANAGEMENT HELPERS -----------
@@ -347,6 +347,12 @@ def y_blog_detail(request, slug):
             bl_blog=blog,
             bl_user_id=user_id
         ).exists()
+    user_bookmarked = False
+    if role == "viewer" and user_id:
+        user_bookmarked = BlogsBookmarks.objects.filter(
+            bb_blog_id=blog.bd_blog_id,
+            bb_user_id=user_id
+        ).exists()
 
     return render(request, "blog/y_detail.html", {
         "blog": blog,
@@ -355,6 +361,7 @@ def y_blog_detail(request, slug):
 
         "like_count": like_count,
         "user_liked": user_liked,
+        "user_bookmarked": user_bookmarked,
     })
 
 
@@ -1011,3 +1018,67 @@ def y_analytics(request):
         "top_viewed": top_viewed,
         "chart": chart,
     })
+
+@login_required_y
+def y_blog_bookmark_toggle(request, blog_id):
+    role = request.session.get("user_role", "viewer")
+    user_id = request.session.get("user_id")
+
+    if request.method != "POST":
+        return redirect("y_home")
+
+    if role != "viewer":
+        messages.error(request, "Only viewers can bookmark blogs.")
+        return redirect("y_home")
+
+    blog = get_object_or_404(BlogsDetails, bd_blog_id=blog_id, bd_is_deleted=0)
+
+    if blog.bd_blog_status != "Published":
+        messages.error(request, "Only published blogs can be bookmarked.")
+        return redirect("y_blog_detail", slug=blog.bd_slug)
+
+    existing = BlogsBookmarks.objects.filter(bb_blog_id=blog_id, bb_user_id=user_id)
+
+    if existing.exists():
+        existing.delete()
+        messages.success(request, "Removed from bookmarks.")
+    else:
+        try:
+            BlogsBookmarks.objects.create(bb_blog_id=blog_id, bb_user_id=user_id)
+            messages.success(request, "Saved to bookmarks.")
+        except IntegrityError:
+            pass
+
+    return redirect("y_blog_detail", slug=blog.bd_slug)
+
+@login_required_y
+def y_bookmarks(request):
+    role = request.session.get("user_role", "viewer")
+    user_id = request.session.get("user_id")
+
+    if role != "viewer":
+        messages.error(request, "Only viewers can access bookmarks.")
+        return redirect("y_home")
+
+    q = (request.GET.get("q") or "").strip()
+
+    qs = (
+        BlogsBookmarks.objects
+        .filter(bb_user_id=user_id)
+        .select_related("bb_blog")
+        .order_by("-bb_created_at")
+    )
+
+    if q:
+        qs = qs.filter(
+            Q(bb_blog__bd_blog_title__icontains=q) |
+            Q(bb_blog__bd_excerpt__icontains=q) |
+            Q(bb_blog__bd_slug__icontains=q)
+        )
+
+    return render(request, "blog/y_bookmarks.html", {
+        "bookmarks": qs,
+        "q": q,
+        "role": role
+    })
+

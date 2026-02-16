@@ -36,4 +36,7 @@ urlpatterns = [
 
     path("y/blog/<int:blog_id>/like/", views.y_blog_like_toggle, name="y_blog_like_toggle"),
     path("y/analytics/", views.y_analytics, name="y_analytics"),
+
+    path("y/bookmarks/", views.y_bookmarks, name="y_bookmarks"),
+    path("y/blog/<int:blog_id>/bookmark/", views.y_blog_bookmark_toggle, name="y_blog_bookmark_toggle"),
 ]

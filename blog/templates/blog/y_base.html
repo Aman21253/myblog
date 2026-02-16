@@ -204,7 +204,13 @@
             <li class="nav-item">
               <a class="nav-link" href="{% url 'y_profile' %}">Profile</a>
             </li>
-              <button onclick="toggleDarkMode()" class="btn btn-sm btn-outline-light">
+            {% if request.session.user_id and request.session.user_role == "viewer" %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'y_bookmarks' %}">Bookmarks</a>
+              </li>
+            {% endif %}
+            <li>
+              <button onclick="toggleDarkMode()" class="btn btn-sm ">
                 🌙
               </button>
             </li>

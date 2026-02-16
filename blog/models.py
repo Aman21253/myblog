@@ -217,3 +217,28 @@ class BlogsLikes(models.Model):
 
     def __str__(self):
         return f"{self.bl_user_id} -> {self.bl_blog_id}"
+    
+class BlogsBookmarks(models.Model):
+    bb_id = models.AutoField(primary_key=True)
+
+    bb_blog = models.ForeignKey(
+        "BlogsDetails",
+        on_delete=models.CASCADE,
+        db_column="bb_blog_id",
+        related_name="bookmarks"
+    )
+    bb_user = models.ForeignKey(
+        "BlogsUsers",
+        on_delete=models.CASCADE,
+        db_column="bb_user_id",
+        related_name="bookmarks"
+    )
+
+    bb_created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "blogs_bookmarks"
+        unique_together = ("bb_blog", "bb_user")
+
+    def __str__(self):
+        return f"{self.bb_user_id} bookmarked {self.bb_blog_id}"

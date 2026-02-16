@@ -79,6 +79,16 @@
       {% else %}
         <span class="pill">❤️ {{ like_count }} Likes</span>
       {% endif %}
+      {% if role == "viewer" %}
+        <form method="post" action="{% url 'y_blog_bookmark_toggle' blog.bd_blog_id %}" class="d-inline">
+          {% csrf_token %}
+          {% if user_bookmarked %}
+            <button type="submit" class="btn btn-sm btn-outline-warning">🔖 Bookmarked</button>
+          {% else %}
+            <button type="submit" class="btn btn-sm btn-outline-dark">📑 Bookmark</button>
+          {% endif %}
+        </form>
+      {% endif %}
     </div>
   </div>
 
