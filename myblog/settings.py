@@ -108,6 +108,19 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = "Strict"
+
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "Strict"
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
