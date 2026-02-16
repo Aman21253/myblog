@@ -92,7 +92,7 @@
           <label class="form-label fw-semibold">
             {% if mode == "edit" %}New Password (optional){% else %}Password{% endif %}
           </label>
-          <input type="password" class="form-control" name="password"
+          <input id="password" type="password" class="form-control" name="password"
                  autocomplete="new-password"
                  placeholder="{% if mode == 'edit' %}Leave blank to keep same{% else %}Enter password{% endif %}">
         </div>
@@ -101,16 +101,40 @@
           <label class="form-label fw-semibold">
             {% if mode == "edit" %}Confirm New Password{% else %}Confirm Password{% endif %}
           </label>
-          <input type="password" class="form-control" name="confirm_password"
+          <input id="confirm_password" type="password" class="form-control" name="confirm_password"
                  autocomplete="new-password"
                  placeholder="{% if mode == 'edit' %}Repeat new password{% else %}Repeat password{% endif %}">
         </div>
 
         <div class="col-md-3 d-flex align-items-end gap-2">
-          <button class="btn btn-dark w-100" type="submit">
+          <button id="submitBtn" class="btn btn-dark w-100" type="submit">
             {% if mode == "edit" %}Update{% else %}Create{% endif %}
           </button>
         </div>
+      </div>
+
+      <!-- ✅ PASSWORD STRENGTH (ADDED) -->
+      <div class="mt-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="small text-muted">
+            Use at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special.
+          </div>
+          <div class="small fw-semibold" id="pwdLabel">Strength: —</div>
+        </div>
+
+        <div class="progress mt-2" style="height:10px;">
+          <div id="pwdBar" class="progress-bar" style="width:0%"></div>
+        </div>
+
+        <div class="small mt-2" id="matchLabel"></div>
+
+        <ul class="small mt-2 mb-0" id="pwdRules" style="padding-left:18px;">
+          <li id="rLen">Min 8 characters</li>
+          <li id="rLow">At least 1 lowercase</li>
+          <li id="rUp">At least 1 uppercase</li>
+          <li id="rNum">At least 1 number</li>
+          <li id="rSp">At least 1 special (!@#$...)</li>
+        </ul>
       </div>
 
       {% if mode == "edit" %}
@@ -120,6 +144,112 @@
       {% endif %}
     </form>
   </div>
+
+  <!-- ✅ PASSWORD STRENGTH SCRIPT (ADDED) -->
+  <script>
+  (function(){
+    const pwd = document.getElementById("password");
+    const cpwd = document.getElementById("confirm_password");
+    const bar = document.getElementById("pwdBar");
+    const label = document.getElementById("pwdLabel");
+    const matchLabel = document.getElementById("matchLabel");
+    const submitBtn = document.getElementById("submitBtn");
+
+    if(!pwd || !cpwd || !bar || !submitBtn) return;
+
+    const rules = {
+      len: document.getElementById("rLen"),
+      low: document.getElementById("rLow"),
+      up:  document.getElementById("rUp"),
+      num: document.getElementById("rNum"),
+      sp:  document.getElementById("rSp"),
+    };
+
+    function ok(el, done){
+      if(!el) return;
+      el.style.color = done ? "green" : "#444";
+      el.style.fontWeight = done ? "700" : "400";
+    }
+
+    function scorePassword(v){
+      let score = 0;
+      const hasLen = v.length >= 8;
+      const hasLow = /[a-z]/.test(v);
+      const hasUp  = /[A-Z]/.test(v);
+      const hasNum = /[0-9]/.test(v);
+      const hasSp  = /[^A-Za-z0-9]/.test(v);
+
+      ok(rules.len, hasLen);
+      ok(rules.low, hasLow);
+      ok(rules.up,  hasUp);
+      ok(rules.num, hasNum);
+      ok(rules.sp,  hasSp);
+
+      if (hasLen) score += 20;
+      if (hasLow) score += 20;
+      if (hasUp)  score += 20;
+      if (hasNum) score += 20;
+      if (hasSp)  score += 20;
+
+      if (v.length > 0 && v.length < 8) score = Math.min(score, 20);
+      return {score, strong: (hasLen && hasLow && hasUp && hasNum && hasSp)};
+    }
+
+    function setBar(score){
+      bar.style.width = score + "%";
+      bar.classList.remove("bg-danger","bg-warning","bg-success");
+      if (score <= 40) bar.classList.add("bg-danger");
+      else if (score <= 80) bar.classList.add("bg-warning");
+      else bar.classList.add("bg-success");
+
+      if (score === 0) label.textContent = "Strength: —";
+      else if (score <= 40) label.textContent = "Strength: Weak";
+      else if (score <= 80) label.textContent = "Strength: Medium";
+      else label.textContent = "Strength: Strong";
+    }
+
+    function checkMatch(){
+      const a = pwd.value || "";
+      const b = cpwd.value || "";
+
+      // if both empty (edit mode), ok
+      if (!a && !b){
+        matchLabel.textContent = "";
+        return true;
+      }
+
+      if (a === b){
+        matchLabel.textContent = "✅ Passwords match";
+        matchLabel.style.color = "green";
+        return true;
+      } else {
+        matchLabel.textContent = "❌ Passwords do not match";
+        matchLabel.style.color = "crimson";
+        return false;
+      }
+    }
+
+    function validate(){
+      const v = pwd.value || "";
+      const res = scorePassword(v);
+      setBar(res.score);
+      const match = checkMatch();
+
+      // If edit mode and user didn't type any password, allow submit
+      const typed = (pwd.value || "").length > 0 || (cpwd.value || "").length > 0;
+      if (!typed){
+        submitBtn.disabled = false;
+        return;
+      }
+
+      submitBtn.disabled = !(res.strong && match);
+    }
+
+    pwd.addEventListener("input", validate);
+    cpwd.addEventListener("input", validate);
+    validate();
+  })();
+  </script>
 {% endif %}
 
 <!-- SEARCH -->

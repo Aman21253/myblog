@@ -35,4 +35,5 @@ urlpatterns = [
     path("y/comment/<int:comment_id>/delete/", views.y_comment_delete, name="y_comment_delete"),
 
     path("y/blog/<int:blog_id>/like/", views.y_blog_like_toggle, name="y_blog_like_toggle"),
+    path("y/analytics/", views.y_analytics, name="y_analytics"),
 ]

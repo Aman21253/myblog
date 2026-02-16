@@ -1,45 +1,151 @@
-{% extends 'blog/y_base.html' %}
-{% block title %}Register{% endblock %}
+{% extends "blog/y_base.html" %}
+{% block title %}Register | MyBlog{% endblock %}
 
 {% block content %}
-<h3 class="mb-1">Register</h3>
-<p class="text-muted mb-4">Create your account (default role: viewer).</p>
+<div class="card p-4 shadow-sm mx-auto" style="max-width:520px;">
+  <h3 class="mb-3">Create account</h3>
 
-<form method="post" class="row g-3">
-  {% csrf_token %}
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
 
-  <div class="col-12">
-    <label class="form-label">Name</label>
-    <input class="form-control" name="name" placeholder="Your full name" required>
-  </div>
+    <div class="mb-3">
+      <label class="form-label">Full Name</label>
+      <input class="form-control" name="name" required placeholder="Aman Bansal">
+    </div>
 
-  <div class="col-12">
-    <label class="form-label">Email</label>
-    <input class="form-control" name="email" placeholder="you@example.com" required>
-  </div>
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input class="form-control" name="email" required type="email" placeholder="you@example.com">
+    </div>
 
-  <div class="col-md-6">
-    <label class="form-label">Password</label>
-    <input class="form-control" name="password" type="password" required>
-  </div>
+    <div class="mb-2">
+      <label class="form-label">Password</label>
+      <input id="password" class="form-control" name="password" required type="password"
+             placeholder="Create a strong password" autocomplete="new-password">
+      <div class="form-text mt-2" id="pwdHint">
+        Use at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special.
+      </div>
 
-  <div class="col-md-6">
-    <label class="form-label">Confirm Password</label>
-    <input class="form-control" name="confirm_password" type="password" required>
-  </div>
+      <!-- Strength bar -->
+      <div class="progress mt-2" style="height:10px;">
+        <div id="pwdBar" class="progress-bar" style="width:0%"></div>
+      </div>
+      <div class="small mt-2 fw-semibold" id="pwdLabel">Strength: —</div>
 
-  <div class="col-12">
-    <label class="form-label">Role</label>
+      <!-- Rule checklist -->
+      <ul class="small mt-2 mb-0" id="pwdRules" style="padding-left:18px;">
+        <li id="rLen">Min 8 characters</li>
+        <li id="rLow">At least 1 lowercase</li>
+        <li id="rUp">At least 1 uppercase</li>
+        <li id="rNum">At least 1 number</li>
+        <li id="rSp">At least 1 special (!@#$...)</li>
+      </ul>
+    </div>
 
-    <select class="form-select" name="role" readonly disabled>
-      <option value="viewer" selected>Viewer</option>
-    </select>
-    <input type="hidden" name="role" value="viewer">
-  </div>
+    <div class="mb-3 mt-3">
+      <label class="form-label">Confirm Password</label>
+      <input id="confirm_password" class="form-control" name="confirm_password" required type="password"
+             placeholder="Re-enter password" autocomplete="new-password">
+      <div class="small mt-2" id="matchLabel"></div>
+    </div>
 
-  <div class="col-12 d-flex gap-2">
-    <button class="btn btn-dark" type="submit">Register</button>
-    <a class="btn btn-outline-secondary" href="{% url 'y_login' %}">Back to login</a>
-  </div>
-</form>
+    <button id="submitBtn" class="btn btn-dark w-100" type="submit">Register</button>
+  </form>
+</div>
+
+<script>
+(function(){
+  const pwd = document.getElementById("password");
+  const cpwd = document.getElementById("confirm_password");
+  const bar = document.getElementById("pwdBar");
+  const label = document.getElementById("pwdLabel");
+  const matchLabel = document.getElementById("matchLabel");
+  const submitBtn = document.getElementById("submitBtn");
+
+  const rules = {
+    len: document.getElementById("rLen"),
+    low: document.getElementById("rLow"),
+    up:  document.getElementById("rUp"),
+    num: document.getElementById("rNum"),
+    sp:  document.getElementById("rSp"),
+  };
+
+  function ok(el, done){
+    el.style.color = done ? "green" : "#444";
+    el.style.fontWeight = done ? "700" : "400";
+  }
+
+  function scorePassword(v){
+    let score = 0;
+    const hasLen = v.length >= 8;
+    const hasLow = /[a-z]/.test(v);
+    const hasUp  = /[A-Z]/.test(v);
+    const hasNum = /[0-9]/.test(v);
+    const hasSp  = /[^A-Za-z0-9]/.test(v);
+
+    ok(rules.len, hasLen);
+    ok(rules.low, hasLow);
+    ok(rules.up,  hasUp);
+    ok(rules.num, hasNum);
+    ok(rules.sp,  hasSp);
+
+    if (hasLen) score += 20;
+    if (hasLow) score += 20;
+    if (hasUp)  score += 20;
+    if (hasNum) score += 20;
+    if (hasSp)  score += 20;
+
+    // extra penalty for short
+    if (v.length > 0 && v.length < 8) score = Math.min(score, 20);
+
+    return {score, strong: (hasLen && hasLow && hasUp && hasNum && hasSp)};
+  }
+
+  function setBar(score){
+    bar.style.width = score + "%";
+
+    // bootstrap classes
+    bar.classList.remove("bg-danger","bg-warning","bg-success");
+    if (score <= 40) bar.classList.add("bg-danger");
+    else if (score <= 80) bar.classList.add("bg-warning");
+    else bar.classList.add("bg-success");
+
+    if (score === 0) label.textContent = "Strength: —";
+    else if (score <= 40) label.textContent = "Strength: Weak";
+    else if (score <= 80) label.textContent = "Strength: Medium";
+    else label.textContent = "Strength: Strong";
+  }
+
+  function checkMatch(){
+    const a = pwd.value || "";
+    const b = cpwd.value || "";
+    if (!a && !b) { matchLabel.textContent = ""; return true; }
+
+    if (a === b){
+      matchLabel.textContent = "✅ Passwords match";
+      matchLabel.style.color = "green";
+      return true;
+    } else {
+      matchLabel.textContent = "❌ Passwords do not match";
+      matchLabel.style.color = "crimson";
+      return false;
+    }
+  }
+
+  function validate(){
+    const v = pwd.value || "";
+    const res = scorePassword(v);
+    setBar(res.score);
+    const match = checkMatch();
+
+    // allow submit only if strong + match
+    submitBtn.disabled = !(res.strong && match);
+  }
+
+  pwd.addEventListener("input", validate);
+  cpwd.addEventListener("input", validate);
+
+  validate();
+})();
+</script>
 {% endblock %}

@@ -2,11 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
-from django.db.models import Q, F
+from django.db.models import Q, F, Count, Sum
+from django.db.models.functions import TruncDate
 from django.db import IntegrityError
 import os
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from django.core.paginator import Paginator
+from datetime import timedelta
 
 from .models import BlogsUsers, BlogsCategories, BlogsDetails, BlogsComments, BlogsLikes
 
@@ -243,11 +246,16 @@ def y_home(request):
         )
 
     blogs = blogs.order_by("-bd_published_at", "-bd_updated_at")
+    paginator = Paginator(blogs, 6)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     return render(request, "blog/y_home.html", {
-        "blogs": blogs[:50],
+        "page_obj": page_obj,
+        "blogs": page_obj, 
         "categories": categories,
         "q": q,
+        # Url becz i add this in my y_home page
         "cat": cat,
         "role": role,
     })
@@ -434,6 +442,10 @@ def y_blog_edit(request, blog_id):
 
     blog = get_object_or_404(BlogsDetails, bd_blog_id=blog_id, bd_is_deleted=0)
 
+    categories = BlogsCategories.objects.filter(
+        bc_category_status="Active"
+    ).order_by("bc_sort_order", "bc_category_name")
+
     if role == "writer" and blog.bd_user_id != user_id:
         messages.error(request, "You can edit only your own blogs.")
         return redirect("y_blog_detail", slug=blog.bd_slug)
@@ -509,9 +521,14 @@ def y_dashboard(request):
         )
 
     drafts = drafts.order_by("-bd_updated_at", "-bd_blog_id")
+    paginator = Paginator(drafts, 8)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
 
     return render(request, "blog/y_dashboard.html", {
-        "drafts": drafts,
+        "page_obj": page_obj,
+        "drafts": page_obj,
         "q": q,
         "role": role,
         "email": request.session.get("user_email"),
@@ -935,3 +952,63 @@ def y_blog_like_toggle(request, blog_id):
             pass
 
     return redirect("y_blog_detail", slug=blog.bd_slug)
+
+#---------------------analytics---------------------
+@login_required_y
+@role_required("admin", "writer")
+def y_analytics(request):
+    role = request.session.get("user_role")
+    user_id = request.session.get("user_id")
+
+    blogs_qs = BlogsDetails.objects.filter(bd_is_deleted=0)
+    comments_qs = BlogsComments.objects.filter(bc_is_deleted=0, bc_status="Approved")
+    likes_qs = BlogsLikes.objects.all()
+
+    # Writer = only own blogs
+    if role == "writer":
+        blogs_qs = blogs_qs.filter(bd_user_id=user_id)
+        comments_qs = comments_qs.filter(bc_blog__bd_user_id=user_id)
+        likes_qs = likes_qs.filter(bl_blog__bd_user_id=user_id)
+
+    total_published = blogs_qs.filter(bd_blog_status="Published").count()
+    total_drafts = blogs_qs.filter(bd_blog_status="Draft").count()
+    total_views = blogs_qs.aggregate(v=Sum("bd_views"))["v"] or 0
+
+    total_comments = comments_qs.count()
+    total_likes = likes_qs.count()
+
+    # Top viewed blogs
+    top_viewed = (
+        blogs_qs.filter(bd_blog_status="Published")
+        .order_by("-bd_views", "-bd_blog_id")[:5]
+    )
+
+    # Last 7 days: daily views (simple)
+    today = timezone.now().date()
+    start_date = today - timedelta(days=6)
+
+    daily_views = (
+        blogs_qs.filter(bd_blog_status="Published", bd_date_added__gte=start_date)
+        .annotate(day=TruncDate("bd_date_added"))
+        .values("day")
+        .annotate(views=Sum("bd_views"))
+        .order_by("day")
+    )
+
+    # ensure all 7 days exist (fill missing days with 0)
+    day_map = {row["day"]: row["views"] for row in daily_views}
+    chart = []
+    for i in range(7):
+        d = start_date + timedelta(days=i)
+        chart.append({"day": d, "views": day_map.get(d, 0)})
+
+    return render(request, "blog/y_analytics.html", {
+        "role": role,
+        "total_published": total_published,
+        "total_drafts": total_drafts,
+        "total_views": total_views,
+        "total_comments": total_comments,
+        "total_likes": total_likes,
+        "top_viewed": top_viewed,
+        "chart": chart,
+    })
