@@ -538,7 +538,6 @@ def y_dashboard(request):
 @login_required_y
 @role_required("admin")
 def y_users(request):
-    # Optional single-page form mode: ?mode=create or ?mode=edit&user_id=123
     mode = (request.GET.get("mode") or "").strip().lower() or None
     edit_user = None
 
