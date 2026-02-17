@@ -39,4 +39,7 @@ urlpatterns = [
 
     path("y/bookmarks/", views.y_bookmarks, name="y_bookmarks"),
     path("y/blog/<int:blog_id>/bookmark/", views.y_blog_bookmark_toggle, name="y_blog_bookmark_toggle"),
+
+    path("y/forgot-password/", views.y_forgot_password, name="y_forgot_password"),
+    path("y/reset-password/<str:token>/", views.y_reset_password, name="y_reset_password"),
 ]

@@ -10,8 +10,11 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from datetime import timedelta
+import uuid
+from django.urls import reverse
+from django.core.mail import send_mail
 
-from .models import BlogsUsers, BlogsCategories, BlogsDetails, BlogsComments, BlogsLikes, BlogsBookmarks
+from .models import BlogsUsers, BlogsCategories, BlogsDetails, BlogsComments, BlogsLikes, BlogsBookmarks, PasswordResetToken
 
 
 # ----------- USER MANAGEMENT HELPERS -----------
@@ -162,7 +165,7 @@ def y_login(request):
 
     return render(request, "blog/y_login.html")
 
-
+#-------------Register----------------------
 def y_register(request):
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -215,6 +218,90 @@ def y_register(request):
 def y_logout(request):
     request.session.flush()
     return redirect("y_login")
+
+#-------------Forgot password--------------------------
+def y_forgot_password(request):
+    """
+    Screen: user enters email
+    Action: send reset link if user exists (but UI always shows generic message)
+    """
+    if request.method == "POST":
+        email = (request.POST.get("email") or "").strip().lower()
+
+        user = BlogsUsers.objects.filter(bu_email=email, bu_status="Active").first()
+
+        # Always show same message (security)
+        messages.success(request, "If email exists, reset link has been sent.")
+        if not user:
+            return redirect("y_login")
+
+        token = str(uuid.uuid4())
+
+        # create token row
+        try:
+            PasswordResetToken.objects.create(
+                prt_user=user,
+                prt_token=token,
+            )
+        except IntegrityError:
+            # rare case token clash
+            token = str(uuid.uuid4())
+            PasswordResetToken.objects.create(
+                prt_user=user,
+                prt_token=token,
+            )
+
+        reset_link = request.build_absolute_uri(
+            reverse("y_reset_password", kwargs={"token": token})
+        )
+
+        send_mail(
+            subject="Reset Your Password - MyBlog",
+            message=f"Click this link to reset your password:\n\n{reset_link}\n\nThis link expires in 30 minutes.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+
+        return redirect("y_login")
+
+    return render(request, "blog/y_forgot_password.html")
+
+
+def y_reset_password(request, token):
+    """
+    Screen: set new password
+    """
+    reset_obj = PasswordResetToken.objects.filter(prt_token=token).select_related("prt_user").first()
+
+    if (not reset_obj) or reset_obj.prt_is_used or reset_obj.is_expired():
+        messages.error(request, "Invalid or expired reset link.")
+        return redirect("y_login")
+
+    if request.method == "POST":
+        password = request.POST.get("password") or ""
+        confirm = request.POST.get("confirm_password") or ""
+
+        if password != confirm:
+            messages.error(request, "Passwords do not match.")
+            return redirect(request.path)
+
+        if len(password) < 8:
+            messages.error(request, "Password must be at least 8 characters.")
+            return redirect(request.path)
+
+        user = reset_obj.prt_user
+        user.bu_password_hash = make_password(password)
+        user.bu_updated_at = timezone.now()
+        user.save(update_fields=["bu_password_hash", "bu_updated_at"])
+
+        reset_obj.prt_is_used = True
+        reset_obj.save(update_fields=["prt_is_used"])
+
+        messages.success(request, "Password reset successful. Please login.")
+        return redirect("y_login")
+
+    return render(request, "blog/y_reset_password.html", {"token": token})
 
 
 # ---------------- PAGES ----------------

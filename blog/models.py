@@ -1,11 +1,6 @@
-# This is an auto-generated Django model module.
-# You'll have to do the following manually to clean this up:
-#   * Rearrange models' order
-#   * Make sure each model has one field with primary_key=True
-#   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
-#   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
-# Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
+from django.utils import timezone
+from datetime import timedelta
 
 
 class AuthGroup(models.Model):
@@ -242,3 +237,28 @@ class BlogsBookmarks(models.Model):
 
     def __str__(self):
         return f"{self.bb_user_id} bookmarked {self.bb_blog_id}"
+    
+def default_prt_expiry():
+    return timezone.now() + timedelta(minutes=30)
+
+class PasswordResetToken(models.Model):
+    prt_id = models.AutoField(primary_key=True)
+
+    prt_user = models.ForeignKey(
+        "BlogsUsers",
+        on_delete=models.CASCADE,
+        db_column="prt_user_id",
+        related_name="password_reset_tokens"
+    )
+
+    prt_token = models.CharField(max_length=100, unique=True)
+    prt_created_at = models.DateTimeField(auto_now_add=True)
+    prt_is_used = models.BooleanField(default=False)
+
+    prt_expires_at = models.DateTimeField(default=default_prt_expiry)
+
+    class Meta:
+        db_table = "password_reset_token"
+
+    def is_expired(self):
+        return timezone.now() > self.prt_expires_at

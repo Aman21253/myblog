@@ -70,6 +70,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "myblog.wsgi.application"
 
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "no-reply@myblog.com"
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -108,12 +111,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = "Strict"
-
-SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "Strict"
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "Lax"
 
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
